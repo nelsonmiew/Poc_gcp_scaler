@@ -22,7 +22,12 @@ async function runScalingLoop() {
   try {
     logger.info("Running scaling check");
     const result = await scale(config);
-    logger.info("Scaling check complete", result);
+    logger.info("Scaling check complete", {
+      queueDepth: result.queueDepth,
+      currentInstances: result.currentInstances,
+      targetInstances: result.targetInstances,
+      scaled: result.scaled,
+    });
   } catch (error) {
     logger.error("Scaling failed", {
       error: error instanceof Error ? error.message : String(error),
