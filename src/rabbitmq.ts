@@ -22,7 +22,10 @@ export async function getQueueDepth(params: {
     const queueUrl = `${urlObj.protocol}//${urlObj.host}/api/queues/%2F/${params.queue}`;
 
     // Sanitize URL for logging (hide password)
-    const sanitizedUrl = queueUrl.replace(/\/\/[^:]+:[^@]+@/, '//<credentials>@');
+    const sanitizedUrl = queueUrl.replace(
+      /\/\/[^:]+:[^@]+@/,
+      "//<credentials>@",
+    );
 
     logger.debug("Fetching queue depth", {
       url: sanitizedUrl,
@@ -40,7 +43,9 @@ export async function getQueueDepth(params: {
     });
 
     if (!response.ok) {
-      const responseText = await response.text().catch(() => "Unable to read response body");
+      const responseText = await response
+        .text()
+        .catch(() => "Unable to read response body");
       logger.error("RabbitMQ Management API returned error", {
         status: response.status,
         statusText: response.statusText,
@@ -64,7 +69,10 @@ export async function getQueueDepth(params: {
     return depth;
   } catch (error) {
     // Sanitize URL for logging (hide password)
-    const sanitizedUrl = params.url.replace(/\/\/[^:]+:[^@]+@/, '//<credentials>@');
+    const sanitizedUrl = params.url.replace(
+      /\/\/[^:]+:[^@]+@/,
+      "//<credentials>@",
+    );
 
     logger.error("Failed to get queue depth", {
       error: error instanceof Error ? error.message : String(error),
