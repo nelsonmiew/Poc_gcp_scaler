@@ -64,14 +64,14 @@ jobs:
         run: |
           docker build -t ${{ env.IMAGE_NAME }}:${{ github.sha }} .
           docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/poc-registry/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/poc-images/${{ env.IMAGE_NAME }}:latest
           docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/poc-registry/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/poc-images/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       - name: Push to Artifact Registry
         run: |
-          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/poc-registry/${{ env.IMAGE_NAME }}:latest
-          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/poc-registry/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/poc-images/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/poc-images/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
   trigger-terraform:
     needs: build-and-push
@@ -82,7 +82,12 @@ jobs:
       - name: Trigger Terraform Apply
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.DISPATCH_TOKEN }}
+          token: ${{ secrets.GCP_POC_INFRA_REPO_PAT }}
           repository: ${{ github.repository_owner }}/Poc_gcp_gitops
-          event-type: scaler-updated
-          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+          event-type: image_updated
+          client-payload: |
+            {
+              "component": "scaler",
+              "image_tag": "${{ github.sha }}",
+              "repository": "${{ github.repository }}"
+            }
