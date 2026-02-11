@@ -12,43 +12,39 @@ app.get("/health", (c) => {
   return c.json({ status: "healthy" });
 });
 
-// Scale endpoint (called by Cloud Scheduler)
-app.post("/scale", async (c) => {
+// Scaling function that runs continuously
+let scalingInterval: NodeJS.Timeout | null = null;
+let isShuttingDown = false;
+
+async function runScalingLoop() {
+  if (isShuttingDown) return;
+
   try {
-    logger.info("Scale request received");
-
+    logger.info("Running scaling check");
     const result = await scale(config);
-
-    return c.json({
-      status: "success",
-      ...result,
-    });
+    logger.info("Scaling check complete", result);
   } catch (error) {
     logger.error("Scaling failed", {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-
-    return c.json(
-      {
-        status: "error",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
-      500,
-    );
   }
-});
+}
 
 // Graceful shutdown
-let isShuttingDown = false;
-
 process.on("SIGTERM", async () => {
   if (isShuttingDown) return;
   isShuttingDown = true;
 
   logger.info("SIGTERM received, starting graceful shutdown");
 
-  // Give time for in-flight requests to complete
+  // Stop the scaling loop
+  if (scalingInterval) {
+    clearInterval(scalingInterval);
+    scalingInterval = null;
+  }
+
+  // Give time for current scaling operation to complete
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
   logger.info("Graceful shutdown complete");
@@ -68,6 +64,7 @@ logger.info("Starting custom scaler service", {
   minInstances: config.minInstances,
   maxInstances: config.maxInstances,
   dryRun: config.dryRun,
+  scalingInterval: "15 seconds",
 });
 
 serve({
@@ -76,3 +73,8 @@ serve({
 });
 
 logger.info("Custom scaler service started", { port });
+
+// Start scaling loop - runs every 15 seconds
+logger.info("Starting continuous scaling loop (every 15 seconds)");
+runScalingLoop(); // Run immediately on startup
+scalingInterval = setInterval(runScalingLoop, 15000);
