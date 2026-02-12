@@ -64,10 +64,11 @@ export async function updateInstanceCount(params: {
       url,
       method: "PATCH",
       params: {
-        updateMask: "scaling.manualInstanceCount",
+        updateMask: "scaling.scalingMode,scaling.manualInstanceCount",
       },
       data: {
         scaling: {
+          scalingMode: "MANUAL",
           manualInstanceCount: params.instanceCount,
         },
       },
