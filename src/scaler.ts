@@ -13,11 +13,18 @@ export interface ScaleResult {
 export async function scale(config: ScalerConfig): Promise<ScaleResult> {
   logger.debug("Starting scale operation");
 
-  // 1. Get RabbitMQ queue depth
-  const queueDepth = await rabbitmq.getQueueDepth({
-    url: config.rabbitmqUrl,
-    queue: config.taskQueue,
-  });
+  // 1. Fetch queue depth and current instances in parallel (independent operations)
+  const [queueDepth, currentInstances] = await Promise.all([
+    rabbitmq.getQueueDepth({
+      url: config.rabbitmqUrl,
+      queue: config.taskQueue,
+    }),
+    cloudrun.getInstanceCount({
+      projectId: config.projectId,
+      region: config.region,
+      serviceName: config.processorServiceName,
+    }),
+  ]);
 
   // 2. Calculate target instance count
   const targetInstances = Math.min(
@@ -30,17 +37,11 @@ export async function scale(config: ScalerConfig): Promise<ScaleResult> {
 
   logger.debug("Calculated target instances", {
     queueDepth,
+    currentInstances,
     targetPerInstance: config.targetPerInstance,
     minInstances: config.minInstances,
     maxInstances: config.maxInstances,
     targetInstances,
-  });
-
-  // 3. Get current processor instance count
-  const currentInstances = await cloudrun.getInstanceCount({
-    projectId: config.projectId,
-    region: config.region,
-    serviceName: config.processorServiceName,
   });
 
   // 4. Update if different

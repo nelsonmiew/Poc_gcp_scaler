@@ -9,6 +9,7 @@ export interface ScalerConfig {
   processorServiceName: string;
   dryRun: boolean;
   logLevel: string;
+  pollingIntervalMs: number;
 }
 
 export function loadConfig(): ScalerConfig {
@@ -34,6 +35,10 @@ export function loadConfig(): ScalerConfig {
     processorServiceName: process.env.PROCESSOR_SERVICE_NAME ?? "poc-processor",
     dryRun: process.env.DRY_RUN === "true",
     logLevel: process.env.LOG_LEVEL ?? "info",
+    pollingIntervalMs: Number.parseInt(
+      process.env.POLLING_INTERVAL_MS ?? "2000",
+      10,
+    ),
   };
 
   // Validate configuration
@@ -45,6 +50,9 @@ export function loadConfig(): ScalerConfig {
   }
   if (config.maxInstances < config.minInstances) {
     throw new Error("MAX_INSTANCES must be >= MIN_INSTANCES");
+  }
+  if (config.pollingIntervalMs < 1000 || config.pollingIntervalMs > 60000) {
+    throw new Error("POLLING_INTERVAL_MS must be between 1000 and 60000");
   }
 
   return config;

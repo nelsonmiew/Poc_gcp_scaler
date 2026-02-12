@@ -107,7 +107,8 @@ logger.info("Starting custom scaler service", {
   minInstances: config.minInstances,
   maxInstances: config.maxInstances,
   dryRun: config.dryRun,
-  scalingInterval: "15 seconds",
+  pollingIntervalMs: config.pollingIntervalMs,
+  scalingInterval: `${config.pollingIntervalMs / 1000} seconds`,
 });
 
 serve({
@@ -117,7 +118,9 @@ serve({
 
 logger.info("Custom scaler service started", { port });
 
-// Start scaling loop - runs every 15 seconds
-logger.info("Starting continuous scaling loop (every 15 seconds)");
+// Start scaling loop - runs at configured interval
+logger.info(
+  `Starting continuous scaling loop (every ${config.pollingIntervalMs}ms)`,
+);
 runScalingLoop(); // Run immediately on startup
-scalingInterval = setInterval(runScalingLoop, 15000);
+scalingInterval = setInterval(runScalingLoop, config.pollingIntervalMs);
