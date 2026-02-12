@@ -13,10 +13,10 @@ export async function getQueueDepth(params: {
       .replace("amqp://", "http://")
       .replace(":5672", ":15672");
 
-    // Extract credentials from URL
+    // Extract credentials from URL (decode URI components)
     const urlObj = new URL(managementUrl);
-    const username = urlObj.username || "guest";
-    const password = urlObj.password || "guest";
+    const username = decodeURIComponent(urlObj.username || "guest");
+    const password = decodeURIComponent(urlObj.password || "guest");
 
     // Build management API URL
     const queueUrl = `${urlObj.protocol}//${urlObj.host}/api/queues/%2F/${params.queue}`;
